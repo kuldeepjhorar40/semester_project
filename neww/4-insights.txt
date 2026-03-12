@@ -1,0 +1,30 @@
+Exploratory Data Analysis Insights : 
+* Total records = 50
+* No missing values
+* Passenger range = 51 to 148
+* Load ratio (max) = 1.60 ->shows overcrowding
+
+About Routes:
+* Each of the 5 routes (R11 to R15) had exactly 10 trips
+* This gives a balanced distribution for comparison
+* Proceeding to analyze avg. delay, load, and passenger per route
+
+Trip Frequency by Weekdays:
+* Wednasday and Thursday - Highest(10 trips each)
+* Firday to Monday - Lowest(5 trips each)
+  Suggestions:
+  * Mid-week days may require better buss readiness & load management
+  * Firday to Monday trend can be revalidated with more data before reducing services
+
+Most frequent delays:
+* 6 trips had no delays(0 mins)
+* 6 trips had 8-minutes delay
+* less frequent but existings delays of 11 , 4 , and 16 minutes.
+  Suggestions:
+  * Investigate why this 8-minutes delay occur regularly
+  * Consider slight scheduling changes or buffer time.
+  
+Routes and Delays :
+* R14 has an average delay of 11.2 minutes, which is significantly higher than R11(4.3 mins).
+This suggest R14 needs specific rescheduling and route optimization.
+
