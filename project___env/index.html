@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TransitPulse</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+  <aside id="sidebar">
+    <div class="brand">
+      <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M12 2L21.5 7.5V16.5L12 22L2.5 16.5V7.5L12 2Z"/>
+        <circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/>
+      </svg>
+      <span class="brand-name">TransitPulse</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-link active" data-view="heatmap">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg>
+        Demand Map
+      </button>
+      <button class="nav-link" data-view="schedule">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="16" height="13" rx="2"/><path d="M6 2v4M14 2v4M2 9h16" stroke-linecap="round"/></svg>
+        Schedule
+      </button>
+      <button class="nav-link" data-view="analytics">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="2,16 6,11 10,14 14,7 18,11" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Analytics
+      </button>
+      <button class="nav-link" data-view="routes">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5" cy="10" r="2.5"/><circle cx="15" cy="10" r="2.5"/><path d="M7.5 10h5" stroke-linecap="round"/><path d="M5 7.5V4M15 7.5V4M5 12.5V16M15 12.5V16" stroke-linecap="round"/></svg>
+        Routes
+      </button>
+    </nav>
+
+    <div class="ctrl-group">
+      <p class="ctrl-label">Time Window</p>
+      <div class="chip-grid">
+        <button class="chip active" data-time="morning">AM Peak</button>
+        <button class="chip" data-time="midday">Midday</button>
+        <button class="chip" data-time="evening">PM Peak</button>
+        <button class="chip" data-time="night">Night</button>
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <p class="ctrl-label">Transport Mode</p>
+      <div class="mode-list">
+        <label class="mode-row"><input type="checkbox" data-mode="bus" checked><span class="dot bus"></span>Bus</label>
+        <label class="mode-row"><input type="checkbox" data-mode="metro" checked><span class="dot metro"></span>Metro</label>
+        <label class="mode-row"><input type="checkbox" data-mode="tram" checked><span class="dot tram"></span>Tram</label>
+        <label class="mode-row"><input type="checkbox" data-mode="ferry"><span class="dot ferry"></span>Ferry</label>
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <p class="ctrl-label">Min Demand <span id="sliderVal" class="ctrl-val">20%</span></p>
+      <input type="range" id="demandSlider" min="0" max="100" value="20">
+      <div class="range-ends"><span>Low</span><span>High</span></div>
+    </div>
+
+    <div class="sidebar-foot">
+      <span class="live-dot"></span>
+      <span class="live-lbl">Live Feed</span>
+      <span class="live-time" id="lastUpdate">just now</span>
+    </div>
+  </aside>
+
+  <div id="app">
+    <header id="topbar">
+      <div class="tb-left">
+        <h1 id="pageTitle">Demand Heatmap</h1>
+        <p id="pageSubtitle">City-wide passenger load visualization</p>
+      </div>
+      <div class="tb-right">
+        <div class="kpi-row">
+          <div class="kpi"><b id="totalRiders">2.4M</b><span>Daily Riders</span></div>
+          <div class="kpi-div"></div>
+          <div class="kpi"><b id="activeRoutes">142</b><span>Active Routes</span></div>
+          <div class="kpi-div"></div>
+          <div class="kpi danger"><b id="overcrowded">7</b><span>Overcrowded</span></div>
+        </div>
+        <button class="btn-optimize" id="optimizeBtn">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 1v6M8 9v6M1 8h6M9 8h6" stroke-linecap="round"/></svg>
+          Optimize
+        </button>
+      </div>
+    </header>
+
+    <div id="views">
+
+      <!-- HEATMAP VIEW -->
+      <section class="view active" id="view-heatmap">
+        <div class="map-wrap">
+          <canvas id="heatmapCanvas"></canvas>
+          <div id="tooltip" class="tooltip hidden">
+            <div class="tt-name" id="ttName">—</div>
+            <div class="tt-row"><span>Load</span><span id="ttLoad" class="tt-accent">—</span></div>
+            <div class="tt-row"><span>Routes</span><span id="ttRoutes">—</span></div>
+            <div class="tt-row"><span>Next</span><span id="ttNext" class="tt-green">—</span></div>
+          </div>
+          <div class="map-zoom">
+            <button id="zoomIn">+</button>
+            <button id="zoomReset">◎</button>
+            <button id="zoomOut">−</button>
+          </div>
+        </div>
+        <div class="map-footer">
+          <span class="f-muted">Low demand</span>
+          <div class="heat-grad"></div>
+          <span class="f-muted">High demand</span>
+          <span class="f-sep"></span>
+          <span class="dot bus sm"></span><span class="f-muted">Bus</span>
+          <span class="dot metro sm"></span><span class="f-muted">Metro</span>
+          <span class="dot tram sm"></span><span class="f-muted">Tram</span>
+          <span class="dot ferry sm"></span><span class="f-muted">Ferry</span>
+        </div>
+      </section>
+
+      <!-- SCHEDULE VIEW -->
+      <section class="view" id="view-schedule">
+        <div class="sched-top">
+          <div class="day-pills">
+            <button class="day active" data-day="mon">Mon</button>
+            <button class="day" data-day="tue">Tue</button>
+            <button class="day" data-day="wed">Wed</button>
+            <button class="day" data-day="thu">Thu</button>
+            <button class="day" data-day="fri">Fri</button>
+            <button class="day" data-day="sat">Sat</button>
+            <button class="day" data-day="sun">Sun</button>
+          </div>
+          <button class="btn-ghost">+ Add Trip</button>
+        </div>
+        <div class="gantt-wrap">
+          <div id="gantt"></div>
+        </div>
+        <div class="opt-panel">
+          <div class="opt-panel-head">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="8,2 10,6 14.5,6.5 11,10 12,14.5 8,12 4,14.5 5,10 1.5,6.5 6,6"/></svg>
+            Optimization Suggestions
+          </div>
+          <div id="suggList"></div>
+        </div>
+      </section>
+
+      <!-- ANALYTICS VIEW -->
+      <section class="view" id="view-analytics">
+        <div class="charts-grid">
+          <div class="ccard wide"><p class="ctitle">Hourly Demand by Mode</p><canvas id="demandChart"></canvas></div>
+          <div class="ccard"><p class="ctitle">Modal Split</p><canvas id="modalChart"></canvas></div>
+          <div class="ccard"><p class="ctitle">Punctuality Score</p><canvas id="punctChart"></canvas></div>
+          <div class="ccard wide"><p class="ctitle">Load Heatmap by Hour</p><canvas id="loadChart"></canvas></div>
+        </div>
+      </section>
+
+      <!-- ROUTES VIEW -->
+      <section class="view" id="view-routes">
+        <div class="routes-top">
+          <label class="search-box">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="4.5"/><path d="M10.5 10.5L14 14" stroke-linecap="round"/></svg>
+            <input type="text" id="routeSearch" placeholder="Search routes…">
+          </label>
+          <select id="routeFilter">
+            <option value="all">All modes</option>
+            <option value="bus">Bus</option>
+            <option value="metro">Metro</option>
+            <option value="tram">Tram</option>
+            <option value="ferry">Ferry</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Route</th><th>Mode</th><th>Frequency</th><th>Avg Load</th><th>Punctuality</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody id="routesBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- OPTIMIZE MODAL -->
+  <div id="modalBg">
+    <div class="modal">
+      <div class="modal-head">
+        <span>Schedule Optimizer</span>
+        <button id="modalClose">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="optProgress">
+          <div class="prog-track"><div id="progFill" class="prog-fill"></div></div>
+          <p id="progMsg" class="prog-label">Initializing…</p>
+        </div>
+        <div id="optResults" class="hidden"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
